@@ -11,8 +11,8 @@
 //!   VSFR registers, response decoders and the device's own catalog files.
 //! * [`data_buf`], [`spectrum`], [`readings`], [`config`] and [`units`] turn
 //!   response payloads into typed values. They never perform I/O.
-//! * [`transport`] defines the [`Transport`] trait; [`usb`] and [`bluetooth`]
-//!   implement it behind the `usb` and `bluetooth` crate features.
+//! * [`transport`] defines the [`Transport`] trait; the `usb` and `bluetooth`
+//!   modules implement it behind the `usb` and `bluetooth` crate features.
 //! * [`discovery`] scans the enabled transports and opens endpoints.
 //! * [`client`] provides [`RadiaCode`], an asynchronous session that combines all of the above.
 //!
@@ -82,3 +82,7 @@ pub use readings::{AccumulatedDose, DeviceStatus, LiveRates, MonitorPollSample, 
 pub use spectrum::{EnergyCalibration, Spectrum, SpectrumFormat};
 pub use transport::{BoxedTransport, Transport};
 pub use units::{CountDisplayUnit, DisplayUnits, DoseDisplayUnit};
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;

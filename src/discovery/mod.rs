@@ -1,6 +1,6 @@
 //! Device endpoints, scan results and transport-independent discovery and connect.
 //!
-//! [`discover_devices`] and [`connect`] are always available; transports that
+//! [`discover_devices`] and [`connect()`] are always available; transports that
 //! were not compiled in report [`Error::TransportUnavailable`](crate::Error::TransportUnavailable).
 
 mod connect;
