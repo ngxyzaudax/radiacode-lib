@@ -1,7 +1,9 @@
+use super::connect::combine_scans;
 use super::{
     is_radiacode_name, merge_discovered, model_from_advertisement, model_from_serial, resolve_usb_endpoint,
     serial_from_advertisement, sort_and_dedup, DeviceEndpoint, DiscoveredDevice, TransportKind,
 };
+use crate::error::Error;
 
 fn usb(serial: &str) -> DiscoveredDevice {
     DiscoveredDevice {
@@ -109,4 +111,22 @@ fn radiacode_name_detection() {
     assert!(is_radiacode_name("RadiaCode-103"));
     assert!(is_radiacode_name("my radiacode"));
     assert!(!is_radiacode_name("Heart Rate"));
+}
+
+#[test]
+fn combine_scans_keeps_partial_results() {
+    let combined = combine_scans(Some(Ok(vec![usb("RC-103-1")])), Some(Err(Error::Timeout))).unwrap();
+    assert_eq!(combined, vec![usb("RC-103-1")]);
+    assert!(combine_scans(None, None).unwrap().is_empty());
+    assert!(matches!(combine_scans(None, Some(Err(Error::Timeout))), Err(Error::Timeout)));
+}
+
+#[test]
+fn combine_scans_reports_both_failures() {
+    let usb_failure = Error::TransportUnavailable("usb: no bus".into());
+    let ble_failure = Error::TransportUnavailable("bluetooth: no adapter".into());
+    let message = combine_scans(Some(Err(usb_failure)), Some(Err(ble_failure))).unwrap_err().to_string();
+    assert!(message.contains("no bus") && message.contains("no adapter"), "{message}");
+    let denied = combine_scans(Some(Err(Error::UsbPermissionDenied)), Some(Err(Error::Timeout)));
+    assert!(matches!(denied, Err(Error::UsbPermissionDenied)));
 }

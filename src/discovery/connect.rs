@@ -5,7 +5,7 @@ use tracing::warn;
 use super::endpoint::{DeviceEndpoint, DiscoveredDevice, TransportKind};
 use super::merge::merge_discovered;
 use crate::client::{OpenOptions, RadiaCode};
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::transport::BoxedTransport;
 
 const DEFAULT_BLUETOOTH_SCAN: Duration = Duration::from_secs(5);
@@ -60,20 +60,24 @@ pub async fn connect(endpoint: &DeviceEndpoint, options: OpenOptions) -> Result<
     RadiaCode::open(open_transport(endpoint).await?, options).await
 }
 
-fn combine_scans(
+pub(super) fn combine_scans(
     usb: Option<Result<Vec<DiscoveredDevice>>>,
     bluetooth: Option<Result<Vec<DiscoveredDevice>>>,
 ) -> Result<Vec<DiscoveredDevice>> {
     match (usb, bluetooth) {
-        (Some(Err(usb_error)), Some(Err(ble_error))) => {
-            warn!(%usb_error, "usb scan failed");
-            Err(ble_error)
-        }
+        (Some(Err(usb_error)), Some(Err(ble_error))) => Err(both_scans_failed(usb_error, ble_error)),
         (Some(Err(error)), None) | (None, Some(Err(error))) => Err(error),
         (usb, bluetooth) => Ok(merge_discovered(
             scan_or_empty(usb, TransportKind::Usb),
             scan_or_empty(bluetooth, TransportKind::Bluetooth),
         )),
+    }
+}
+
+fn both_scans_failed(usb_error: Error, ble_error: Error) -> Error {
+    match usb_error {
+        Error::UsbPermissionDenied => usb_error,
+        other => Error::TransportUnavailable(format!("every transport failed to scan: {other}; {ble_error}")),
     }
 }
 
@@ -89,8 +93,8 @@ fn scan_or_empty(scan: Option<Result<Vec<DiscoveredDevice>>>, kind: TransportKin
 }
 
 #[cfg(not(all(feature = "usb", feature = "bluetooth")))]
-fn feature_disabled(kind: TransportKind) -> crate::error::Error {
-    crate::error::Error::TransportUnavailable(format!("{kind} support is not compiled in; enable the crate feature"))
+fn feature_disabled(kind: TransportKind) -> Error {
+    Error::TransportUnavailable(format!("{kind} support is not compiled in; enable the crate feature"))
 }
 
 #[cfg(feature = "usb")]
