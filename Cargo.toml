@@ -1,0 +1,62 @@
+[package]
+name = "radiacode-lib"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.83"
+description = "RadiaCode gamma spectrometer protocol, USB and Bluetooth LE transports, device discovery, and spectrum / dose-rate parsing"
+license = "AGPL-3.0-only"
+repository = "https://github.com/ngxyzaudax/radiacode-lib"
+homepage = "https://github.com/ngxyzaudax/radiacode-lib"
+documentation = "https://docs.rs/radiacode-lib"
+readme = "README.md"
+keywords = ["radiacode", "dosimeter", "spectrometry", "radiation", "gamma"]
+categories = ["hardware-support", "science", "parser-implementations", "asynchronous"]
+include = [
+    "/src/**",
+    "/examples/**",
+    "/tests/**",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/LICENSE",
+    "/radiacode.rules",
+]
+
+[features]
+default = ["usb", "bluetooth"]
+usb = ["dep:rusb", "tokio/rt"]
+bluetooth = ["dep:btleplug", "dep:futures", "dep:uuid", "dep:libdbus-sys"]
+vendored = ["rusb?/vendored", "libdbus-sys?/vendored"]
+serde = ["dep:serde"]
+
+[dependencies]
+async-trait = "0.1.80"
+chrono = { version = "0.4.38", default-features = false, features = ["clock", "std"] }
+encoding_rs = "0.8.33"
+thiserror = "2"
+tokio = { version = "1.38", features = ["sync", "time"] }
+tracing = "0.1.40"
+serde = { version = "1.0.200", features = ["derive"], optional = true }
+rusb = { version = "0.9.4", optional = true }
+btleplug = { version = "0.11.5", optional = true }
+futures = { version = "0.3.30", optional = true }
+uuid = { version = "1.8", optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libdbus-sys = { version = "0.2.5", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1.38", features = ["rt-multi-thread", "macros", "test-util"] }
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(docsrs)"] }
+
+[lints.clippy]
+dbg_macro = "warn"
+
+[package.metadata.docs.rs]
+features = ["usb", "bluetooth", "serde", "vendored"]
+rustdoc-args = ["--cfg", "docsrs"]
