@@ -6,6 +6,7 @@ pub(super) enum BleError {
     DeviceNotFound,
     CharacteristicMissing,
     InvalidAddress(String),
+    ConnectTimedOut,
     Bluetooth(btleplug::Error),
 }
 
@@ -24,6 +25,7 @@ impl From<BleError> for Error {
                 Error::TransportUnavailable("required bluetooth characteristic missing".into())
             }
             BleError::InvalidAddress(value) => Error::InvalidArgument(format!("invalid bluetooth address: {value}")),
+            BleError::ConnectTimedOut => Error::TransportUnavailable("bluetooth: connect timed out".into()),
             BleError::Bluetooth(inner) => bluetooth_error(&inner),
         }
     }

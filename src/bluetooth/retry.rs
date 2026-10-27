@@ -20,7 +20,10 @@ pub fn fast_reconnect_backoff(attempt: usize, error: &Error) -> Option<Duration>
 pub fn is_fast_reconnect_failure(error: &Error) -> bool {
     match error {
         Error::DeviceNotFound => true,
-        Error::TransportUnavailable(message) => message.to_ascii_lowercase().contains("le-connection-abort-by-local"),
+        Error::TransportUnavailable(message) => {
+            let message = message.to_ascii_lowercase();
+            message.contains("le-connection-abort-by-local") || message.contains("connect timed out")
+        }
         _ => false,
     }
 }
@@ -70,6 +73,7 @@ mod tests {
     fn only_fast_failures_are_retried_and_the_budget_is_bounded() {
         assert!(is_fast_reconnect_failure(&Error::DeviceNotFound));
         assert!(is_fast_reconnect_failure(&abort()));
+        assert!(is_fast_reconnect_failure(&Error::TransportUnavailable("bluetooth: connect timed out".into())));
         assert!(!is_fast_reconnect_failure(&Error::IncompatibleFirmware { major: 4, minor: 0 }));
         assert_eq!(fast_reconnect_backoff(0, &Error::DeviceNotFound), Some(FAST_RECONNECT_BACKOFF));
         assert_eq!(fast_reconnect_backoff(FAST_RECONNECT_ATTEMPTS - 1, &abort()), None);

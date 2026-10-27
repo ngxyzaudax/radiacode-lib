@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::time::Duration;
 
 use btleplug::api::{Characteristic, Peripheral as _};
@@ -15,6 +16,7 @@ use super::uuids::{NOTIFY_UUID, WRITE_UUID};
 const LINK_SETTLE: Duration = Duration::from_millis(250);
 const STALE_DISCONNECT_COOLDOWN: Duration = Duration::from_millis(500);
 const DISCONNECT_TIMEOUT: Duration = Duration::from_secs(2);
+const LINK_OPEN_TIMEOUT: Duration = Duration::from_secs(8);
 
 /// A connected peripheral with its request and notification characteristics.
 pub(super) struct BluetoothLink {
@@ -29,11 +31,11 @@ pub(super) async fn open_link(peripheral: Peripheral) -> Result<BluetoothLink, B
     let address = peripheral_key(&peripheral);
     disconnect_stale(&peripheral).await;
     debug!(%address, "bluetooth connecting");
-    peripheral.connect().await?;
-    peripheral.discover_services().await?;
+    bounded(&peripheral, peripheral.connect()).await?;
+    bounded(&peripheral, peripheral.discover_services()).await?;
     let write_char = find_characteristic(&peripheral, WRITE_UUID)?;
     let notify_char = find_characteristic(&peripheral, NOTIFY_UUID)?;
-    let mut notifications = subscribe(&peripheral, &notify_char).await?;
+    let mut notifications = bounded(&peripheral, subscribe(&peripheral, &notify_char)).await?;
     tokio::time::sleep(LINK_SETTLE).await;
     drain_for_settle(&mut notifications).await;
     info!(%address, "bluetooth transport ready");
@@ -46,6 +48,20 @@ pub(super) async fn disconnect_stale(peripheral: &Peripheral) {
         debug!(address = %peripheral_key(peripheral), "bluetooth disconnecting stale session");
         disconnect_with_timeout(peripheral).await;
         tokio::time::sleep(STALE_DISCONNECT_COOLDOWN).await;
+    }
+}
+
+async fn bounded<T, E>(peripheral: &Peripheral, operation: impl Future<Output = Result<T, E>>) -> Result<T, BleError>
+where
+    E: Into<BleError>,
+{
+    match timeout(LINK_OPEN_TIMEOUT, operation).await {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(error)) => Err(error.into()),
+        Err(_) => {
+            disconnect_with_timeout(peripheral).await;
+            Err(BleError::ConnectTimedOut)
+        }
     }
 }
 

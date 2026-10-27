@@ -70,4 +70,7 @@ fn btleplug_errors_are_classified() {
     assert!(Error::from(BleError::Bluetooth(btleplug::Error::TimedOut(Duration::from_secs(1)))).is_timeout());
     let busy = Error::from(BleError::Bluetooth(btleplug::Error::RuntimeError("adapter busy".into())));
     assert!(matches!(busy, Error::TransportUnavailable(_)));
+    let timed_out = Error::from(BleError::ConnectTimedOut);
+    assert!(crate::bluetooth::is_fast_reconnect_failure(&timed_out));
+    assert!(!timed_out.is_timeout());
 }
