@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-27
+
+### Added
+
+- `RssiStatus` (`Measured`, `NotReported`, `PermissionDenied`). `PermissionDenied` displays as `RSSI unavailable: permission denied`. The BlueZ management socket needs `CAP_NET_ADMIN`; the `bluetooth` group is enough for `bluetoothctl` and is not enough for that socket. This crate does not open the socket.
+- Fast Bluetooth reconnect: `DeviceNotFound` and `le-connection-abort-by-local` are retried up to three times, with a 750 ms pause and a fresh scan after the first miss.
+- A connect, service discovery, or notification subscribe that does not finish within 8 s is disconnected and retried on that same path.
+- A pending Bluetooth read fails as soon as the link drops, instead of waiting out the 30 s response timeout.
+- Real-time `DataBuf` records whose error percent is outside 0–100 are rejected. The newest rare record is chosen by sequence number, not by buffer order.
+
+### Changed
+
+- **Breaking:** `DeviceStatus.rssi_dbm` is now `rssi: RssiStatus`. `Transport::link_rssi_dbm` and `sample_link_rssi_dbm`, and `RadiaCode::rssi_dbm` and `sample_rssi_dbm`, are renamed to `link_rssi`, `sample_link_rssi`, `rssi`, and `sample_rssi`.
+
 ## [0.1.0] - 2026-10-26
 
 Initial release, extracted from the device crates of
@@ -44,5 +58,6 @@ Initial release, extracted from the device crates of
   - `decode_databuf`
 - Unit tests, virtual-device integration tests, and wire-level protocol fixtures.
 
-[Unreleased]: https://github.com/ngxyzaudax/radiacode-lib/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ngxyzaudax/radiacode-lib/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ngxyzaudax/radiacode-lib/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ngxyzaudax/radiacode-lib/releases/tag/v0.1.0
