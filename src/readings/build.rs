@@ -56,7 +56,7 @@ pub fn status_from_snapshot(snapshot: &DataBufSnapshot) -> DeviceStatus {
     DeviceStatus {
         battery_percent: snapshot.rare.map(|rare| rare.battery_percent).filter(|b| plausible_battery(*b)),
         temperature_c: snapshot.rare.map(|rare| rare.temperature_c).filter(|t| plausible_temperature(*t)),
-        rssi_dbm: None,
+        rssi: crate::readings::RssiStatus::NotReported,
     }
 }
 

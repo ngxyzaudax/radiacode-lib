@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::error::Result;
 use crate::protocol::BytesBuffer;
+use crate::readings::RssiStatus;
 
 /// A byte link to one RadiaCode device.
 ///
@@ -23,14 +24,14 @@ pub trait Transport: Send {
     /// Closes the link.
     async fn disconnect(self: Box<Self>) -> Result<()>;
 
-    /// Last known link RSSI in dBm, if the link reports one.
-    async fn link_rssi_dbm(&mut self) -> Option<i16> {
-        None
+    /// Last known link RSSI, if the link reports one.
+    async fn link_rssi(&mut self) -> RssiStatus {
+        RssiStatus::NotReported
     }
 
-    /// Samples a fresh RSSI value, falling back to [`Transport::link_rssi_dbm`].
-    async fn sample_link_rssi_dbm(&mut self) -> Option<i16> {
-        self.link_rssi_dbm().await
+    /// Samples a fresh RSSI value, falling back to [`Transport::link_rssi`].
+    async fn sample_link_rssi(&mut self) -> RssiStatus {
+        self.link_rssi().await
     }
 }
 

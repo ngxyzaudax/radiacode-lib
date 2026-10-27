@@ -9,8 +9,10 @@ use super::drain::drain_until_quiet;
 use super::error::{ble_result, BleError};
 use super::execute::execute_request;
 use super::link::{disconnect_with_timeout, open_link, BluetoothLink};
+use super::retry::retry_connect;
 use crate::error::Result;
 use crate::protocol::BytesBuffer;
+use crate::readings::RssiStatus;
 use crate::transport::Transport;
 
 const FRESH_SCAN: Duration = Duration::from_secs(2);
@@ -39,12 +41,22 @@ impl BluetoothTransport {
     /// Uses the adapter's cached peripheral when available and scans briefly otherwise.
     pub async fn connect(address: &str) -> Result<Self> {
         info!(%address, "bluetooth transport connecting");
-        ble_result(connect_cached(address).await)
+        open_with_retry(address, false).await
     }
 
     /// Drops any cached connection, rescans and connects; use after the link was lost.
     pub async fn connect_fresh(address: &str) -> Result<Self> {
         info!(%address, "bluetooth transport reconnecting with fresh scan");
+        open_with_retry(address, true).await
+    }
+
+    /// One cached-or-brief-scan connect, without the fast-reconnect retry.
+    pub async fn connect_once(address: &str) -> Result<Self> {
+        ble_result(connect_cached(address).await)
+    }
+
+    /// One fresh-scan connect, without the fast-reconnect retry.
+    pub async fn connect_fresh_once(address: &str) -> Result<Self> {
         ble_result(connect_after_rescan(address).await)
     }
 
@@ -87,7 +99,24 @@ impl Transport for BluetoothTransport {
         ble_result(self.link.peripheral.disconnect().await.map_err(BleError::from))
     }
 
-    async fn link_rssi_dbm(&mut self) -> Option<i16> {
-        self.link.peripheral.properties().await.ok().flatten().and_then(|properties| properties.rssi)
+    async fn link_rssi(&mut self) -> RssiStatus {
+        match self.link.peripheral.properties().await.ok().flatten().and_then(|properties| properties.rssi) {
+            Some(value) => RssiStatus::Measured(value),
+            None => RssiStatus::NotReported,
+        }
     }
+}
+
+async fn open_with_retry(address: &str, fresh: bool) -> Result<BluetoothTransport> {
+    let address = address.to_string();
+    retry_connect(fresh, move |use_fresh| {
+        let address = address.clone();
+        async move {
+            match use_fresh {
+                true => BluetoothTransport::connect_fresh_once(&address).await,
+                false => BluetoothTransport::connect_once(&address).await,
+            }
+        }
+    })
+    .await
 }

@@ -33,7 +33,7 @@ async fn main() -> radiacode_lib::Result<()> {
 fn print_poll(sample: &MonitorPollSample, status: &DeviceStatus) {
     if let Some(rates) = sample.rates.last() {
         println!(
-            "{:8.3} {} ±{:.0}%  {:8.1} {}  battery {:?} %  temperature {:?} C  rssi {:?} dBm",
+            "{:8.3} {} ±{:.0}%  {:8.1} {}  battery {:?} %  temperature {:?} C  {}",
             rates.dose_rate,
             rates.dose_unit.rate_label(),
             rates.dose_rate_err_pct,
@@ -41,7 +41,7 @@ fn print_poll(sample: &MonitorPollSample, status: &DeviceStatus) {
             rates.count_unit.label(),
             status.battery_percent,
             status.temperature_c,
-            status.rssi_dbm,
+            status.rssi,
         );
     }
 }

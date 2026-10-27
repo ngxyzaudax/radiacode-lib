@@ -4,6 +4,7 @@ mod support;
 
 use radiacode_lib::data_buf::DataBufCursor;
 use radiacode_lib::protocol::Command;
+use radiacode_lib::readings::RssiStatus;
 use radiacode_lib::{CountDisplayUnit, Error};
 use support::encode::{rare_record, real_time_record};
 use support::fixtures::{device_with_frame, frame_with_rare, CPM_SIEVERT};
@@ -23,7 +24,7 @@ async fn poll_monitor_converts_records_and_uses_rare_status() {
     assert_eq!(accumulated.duration_secs, 3600);
     assert!((accumulated.dose - 25.0).abs() < 1e-3);
     assert_eq!((status.battery_percent, status.temperature_c), (Some(87.5), Some(24.5)));
-    assert_eq!(status.rssi_dbm, Some(-60));
+    assert_eq!(status.rssi, RssiStatus::Measured(-60));
     assert_eq!((sample.decode_warnings, sample.rejected_records), (0, 0));
     assert_eq!(handle.device().request_count(Command::RdVirtSfr), 0);
 }
@@ -35,7 +36,7 @@ async fn poll_monitor_reads_temperature_register_without_rare_record() {
     assert!(sample.accumulated.is_none());
     assert_eq!(status.battery_percent, None);
     assert_eq!(status.temperature_c, Some(31.0));
-    assert_eq!(status.rssi_dbm, Some(-61));
+    assert_eq!(status.rssi, RssiStatus::Measured(-61));
     assert_eq!(handle.device().request_count(Command::RdVirtSfr), 1);
 }
 

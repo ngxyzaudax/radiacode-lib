@@ -2,6 +2,7 @@ use super::{
     live_rates_from, monitor_sample_from, plausible_battery, plausible_temperature, status_from_snapshot, DeviceStatus,
 };
 use crate::data_buf::{decode_data_buf, snapshot_from_frame, DataBufSnapshot, RareStatus, RealTimeRates};
+use crate::readings::RssiStatus;
 use crate::units::{CountDisplayUnit, DisplayUnits, DoseDisplayUnit};
 
 const SV_CPM: DisplayUnits = DisplayUnits { dose: DoseDisplayUnit::MicroSievertPerHour, count: CountDisplayUnit::Cpm };
@@ -64,10 +65,11 @@ fn status_comes_from_rare_record_and_rejects_implausible_values() {
 
 #[test]
 fn status_merge_keeps_previous_values() {
-    let previous = DeviceStatus { battery_percent: Some(80.0), temperature_c: Some(21.0), rssi_dbm: Some(-60) };
-    let fresh = DeviceStatus { battery_percent: Some(79.0), temperature_c: None, rssi_dbm: None };
+    let previous =
+        DeviceStatus { battery_percent: Some(80.0), temperature_c: Some(21.0), rssi: RssiStatus::Measured(-60) };
+    let fresh = DeviceStatus { battery_percent: Some(79.0), temperature_c: None, rssi: RssiStatus::NotReported };
     assert_eq!(
         previous.merged(fresh),
-        DeviceStatus { battery_percent: Some(79.0), temperature_c: Some(21.0), rssi_dbm: Some(-60) }
+        DeviceStatus { battery_percent: Some(79.0), temperature_c: Some(21.0), rssi: RssiStatus::Measured(-60) }
     );
 }
