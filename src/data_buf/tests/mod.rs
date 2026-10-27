@@ -1,6 +1,7 @@
 mod cursor;
 mod decode;
 mod records;
+mod selection;
 
 fn header(seq: u8, entity: u8, group: u8, ticks: i32) -> Vec<u8> {
     [vec![seq, entity, group], ticks.to_le_bytes().to_vec()].concat()

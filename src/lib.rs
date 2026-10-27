@@ -78,7 +78,7 @@ pub use discovery::{
     connect, discover_devices, open_transport, DeviceEndpoint, DiscoveredDevice, DiscoveryOptions, TransportKind,
 };
 pub use error::{Error, Result};
-pub use readings::{AccumulatedDose, DeviceStatus, LiveRates, MonitorPollSample, TimedRates};
+pub use readings::{AccumulatedDose, DeviceStatus, LiveRates, MonitorPollSample, RssiStatus, TimedRates};
 pub use spectrum::{EnergyCalibration, Spectrum, SpectrumFormat};
 pub use transport::{BoxedTransport, Transport};
 pub use units::{CountDisplayUnit, DisplayUnits, DoseDisplayUnit};

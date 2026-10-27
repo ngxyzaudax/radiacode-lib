@@ -32,7 +32,7 @@ async fn chunked_response_is_reassembled() {
     let frame = reply(expected, &[1, 2, 3, 4, 5, 6]);
     let (head, tail) = frame.split_at(7);
     let mut notifications = stream_of(vec![head.to_vec(), tail.to_vec()]);
-    let response = await_matching_response(&mut notifications, expected, far_deadline()).await.unwrap();
+    let response = await_matching_response(&mut notifications, expected, far_deadline(), link_stays_up).await.unwrap();
     assert_eq!(response.size(), 10);
 }
 
@@ -41,14 +41,14 @@ async fn unrelated_frames_are_discarded_before_match() {
     let expected = request_header(Command::GetVersion, 0x81);
     let stale = reply(request_header(Command::GetSerial, 0x82), &[9]);
     let mut notifications = stream_of(vec![stale, reply(expected, &[7])]);
-    let response = await_matching_response(&mut notifications, expected, far_deadline()).await.unwrap();
+    let response = await_matching_response(&mut notifications, expected, far_deadline(), link_stays_up).await.unwrap();
     assert_eq!(response.size(), 5);
 }
 
 #[tokio::test]
 async fn closed_stream_reports_connection_closed() {
     let expected = request_header(Command::GetVersion, 0x81);
-    let outcome = await_matching_response(&mut stream_of(Vec::new()), expected, far_deadline()).await;
+    let outcome = await_matching_response(&mut stream_of(Vec::new()), expected, far_deadline(), link_stays_up).await;
     assert!(matches!(outcome, Err(Error::ConnectionClosed)));
 }
 
@@ -57,8 +57,23 @@ async fn silent_stream_times_out_at_deadline() {
     let mut notifications: NotificationStream = stream::pending().boxed();
     let deadline = Instant::now() + Duration::from_millis(50);
     let expected = request_header(Command::GetVersion, 0x81);
-    let outcome = await_matching_response(&mut notifications, expected, deadline).await;
+    let outcome = await_matching_response(&mut notifications, expected, deadline, link_stays_up).await;
     assert!(matches!(outcome, Err(Error::Timeout)));
+}
+
+#[tokio::test(start_paused = true)]
+async fn dropped_link_closes_before_the_response_timeout() {
+    let mut notifications: NotificationStream = stream::pending().boxed();
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let started = Instant::now();
+    let expected = request_header(Command::GetVersion, 0x81);
+    let outcome = await_matching_response(&mut notifications, expected, deadline, || std::future::ready(false)).await;
+    assert!(matches!(outcome, Err(Error::ConnectionClosed)));
+    assert!(started.elapsed() < Duration::from_secs(1));
+}
+
+fn link_stays_up() -> std::future::Ready<bool> {
+    std::future::ready(true)
 }
 
 #[tokio::test]

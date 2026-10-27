@@ -53,14 +53,14 @@ impl RadiaCode {
         self.transport.disconnect().await
     }
 
-    /// Last known link RSSI in dBm (Bluetooth only).
-    pub async fn rssi_dbm(&mut self) -> Option<i16> {
-        self.transport.link_rssi_dbm().await
+    /// Last known link RSSI (Bluetooth only).
+    pub async fn rssi(&mut self) -> crate::readings::RssiStatus {
+        self.transport.link_rssi().await
     }
 
-    /// Samples a fresh link RSSI in dBm (Bluetooth only).
-    pub async fn sample_rssi_dbm(&mut self) -> Option<i16> {
-        self.transport.sample_link_rssi_dbm().await
+    /// Samples a fresh link RSSI (Bluetooth only).
+    pub async fn sample_rssi(&mut self) -> crate::readings::RssiStatus {
+        self.transport.sample_link_rssi().await
     }
 
     /// Discards stale frames buffered on the link.

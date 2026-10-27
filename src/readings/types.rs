@@ -1,4 +1,5 @@
 use crate::data_buf::{DeviceTicks, SeqGap};
+use crate::readings::RssiStatus;
 use crate::units::{CountDisplayUnit, DoseDisplayUnit};
 
 /// Latest dose and count rate converted to display units.
@@ -77,8 +78,8 @@ pub struct DeviceStatus {
     pub battery_percent: Option<f32>,
     /// Detector temperature, °C.
     pub temperature_c: Option<f32>,
-    /// Link RSSI in dBm, for Bluetooth links.
-    pub rssi_dbm: Option<i16>,
+    /// Link RSSI, for Bluetooth links.
+    pub rssi: RssiStatus,
 }
 
 impl DeviceStatus {
@@ -87,7 +88,7 @@ impl DeviceStatus {
         DeviceStatus {
             battery_percent: fresh.battery_percent.or(self.battery_percent),
             temperature_c: fresh.temperature_c.or(self.temperature_c),
-            rssi_dbm: fresh.rssi_dbm.or(self.rssi_dbm),
+            rssi: fresh.rssi.prefer_over(self.rssi),
         }
     }
 }

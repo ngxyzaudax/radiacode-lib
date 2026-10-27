@@ -17,6 +17,8 @@ mod drain;
 mod error;
 mod execute;
 mod link;
+mod link_watch;
+mod retry;
 mod scan;
 mod transport;
 mod uuids;
@@ -24,6 +26,9 @@ mod uuids;
 #[cfg(test)]
 mod tests;
 
+pub use retry::{
+    fast_reconnect_backoff, is_fast_reconnect_failure, retry_connect, FAST_RECONNECT_ATTEMPTS, FAST_RECONNECT_BACKOFF,
+};
 pub use scan::scan_bluetooth_devices;
 pub use transport::BluetoothTransport;
 pub use uuids::{NOTIFY_UUID, SERVICE_UUID, WRITE_UUID};

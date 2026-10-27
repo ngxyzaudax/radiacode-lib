@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use radiacode_lib::data_buf::DeviceTicks;
 use radiacode_lib::protocol::{Command, DeviceVersions, FirmwareVersion, VirtSfr, VirtString};
+use radiacode_lib::readings::RssiStatus;
 use radiacode_lib::{Error, OpenOptions, SessionRestore};
 use support::fixtures::sfr_file_reads;
 use support::{open_device, try_open_device, try_open_with, ScriptedReply, VirtualDevice};
@@ -118,8 +119,8 @@ async fn disconnect_releases_transport() {
 #[tokio::test(start_paused = true)]
 async fn rssi_and_wall_clock_delegate() {
     let (mut device, _handle) = open_device(VirtualDevice::default()).await;
-    assert_eq!(device.rssi_dbm().await, Some(-60));
-    assert_eq!(device.sample_rssi_dbm().await, Some(-61));
+    assert_eq!(device.rssi().await, RssiStatus::Measured(-60));
+    assert_eq!(device.sample_rssi().await, RssiStatus::Measured(-61));
     let expected = device.base_time() + Duration::from_secs(1);
     assert_eq!(device.wall_clock(DeviceTicks::new(100)), expected);
 }

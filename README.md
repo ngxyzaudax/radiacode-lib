@@ -131,7 +131,7 @@ assert!(snapshot_from_frame(&frame).rates.is_none());
 | --- | --- |
 | Identity | `fw_version`, `serial_number`, `hw_serial_number`, `fw_signature`, `metadata`, `status` |
 | Spectra | `spectrum`, `spectrum_accum`, `spectrum_diff`, `spectrum_reset`, `energy_calibration`, `set_energy_calibration` |
-| Monitoring | `read_data_buf`, `live_rates`, `poll_monitor`, `device_status`, `rssi_dbm` |
+| Monitoring | `read_data_buf`, `live_rates`, `poll_monitor`, `device_status`, `rssi` |
 | Settings | `alarm_limits`, `set_alarm_limits`, `load_device_config`, `apply_device_config`, `set_sound_on`, `set_vibro_on`, `set_display_brightness`, `set_language`, `set_device_on`, `dose_reset`, `sync_device_clock` |
 | Raw access | `execute_raw`, `read_virt_string`, `read_vsfr_*`, `write_vsfr*`, `read_vsfr_batch`, `write_vsfr_batch`, `configuration`, `sfr_file_text` |
 
@@ -174,9 +174,13 @@ with these changes:
 - a `Send` transport trait, so sessions can run on multi-threaded runtimes;
 - an MSRV of 1.83 (edition 2021) instead of 1.92 (edition 2024);
 - no GUI-oriented helpers. The library reports USB permission status but never
-  runs `pkexec`. Bluetooth RSSI comes from `btleplug` only, without shelling out
-  to `dbus-send` or using the BlueZ management socket. It keeps no global
-  scan-session cache;
+  runs `pkexec`. Bluetooth RSSI from `btleplug` is [`RssiStatus::Measured`] or
+  [`RssiStatus::NotReported`]. A caller that queries the BlueZ management socket
+  and is refused reports [`RssiStatus::PermissionDenied`], whose display text is
+  exactly `RSSI unavailable: permission denied`. That socket needs
+  `CAP_NET_ADMIN`; the `bluetooth` group is enough for `bluetoothctl` and is not
+  enough for the management socket. The library does not open that socket and
+  keeps no global scan-session cache;
 - explicit `Error::InvalidArgument` for out-of-range settings, and checked
   arithmetic everywhere.
 

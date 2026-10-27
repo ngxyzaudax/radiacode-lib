@@ -88,10 +88,21 @@ pub fn real_time_records(frame: &DataBufFrame) -> impl Iterator<Item = &RealTime
 
 /// Returns the last rare record of a frame.
 pub fn latest_rare_record(frame: &DataBufFrame) -> Option<&RareData> {
-    frame.records.iter().rev().find_map(|record| match record {
+    rare_records(frame).reduce(prefer_newer_rare)
+}
+
+fn rare_records(frame: &DataBufFrame) -> impl Iterator<Item = &RareData> {
+    frame.records.iter().filter_map(|record| match record {
         DataBufRecord::Rare(record) => Some(record),
         _ => None,
     })
+}
+
+fn prefer_newer_rare<'a>(best: &'a RareData, candidate: &'a RareData) -> &'a RareData {
+    match candidate.header.seq.is_newer_than(best.header.seq) {
+        true => candidate,
+        false => best,
+    }
 }
 
 fn rate_candidate(record: &DataBufRecord) -> Option<RateCandidate> {

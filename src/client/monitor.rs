@@ -62,11 +62,11 @@ impl RadiaCode {
             Some(value) => Some(value),
             None => self.read_vsfr_f32(VirtSfr::TempDegC).await.ok().filter(|t| plausible_temperature(*t)),
         };
-        let rssi_dbm = match refresh_rssi {
-            true => self.sample_rssi_dbm().await,
-            false => self.rssi_dbm().await,
+        let rssi = match refresh_rssi {
+            true => self.sample_rssi().await,
+            false => self.rssi().await,
         };
-        DeviceStatus { temperature_c, rssi_dbm, ..from_records }
+        DeviceStatus { temperature_c, rssi, ..from_records }
     }
 }
 
